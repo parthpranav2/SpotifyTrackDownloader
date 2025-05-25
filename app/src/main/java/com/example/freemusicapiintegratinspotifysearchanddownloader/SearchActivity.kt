@@ -15,6 +15,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import okhttp3.logging.HttpLoggingInterceptor
 
 class SearchActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySearchBinding
@@ -44,14 +45,23 @@ class SearchActivity : AppCompatActivity() {
 
 
         binding.btnSearch.setOnClickListener {
-            val query = binding.txtName.text.toString().replace(" ", "+")
+            val query = binding.txtName.text.toString()
             fetchTracks(query)
         }
 
     }
 
     private fun fetchTracks(query: String) {
+        Log.d("QuerySent", query)
+
+        // Setup logging interceptor for debugging
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        // Setup OkHttp client with headers and logging
         val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
                     .addHeader("x-rapidapi-key", apiKey)
@@ -61,24 +71,34 @@ class SearchActivity : AppCompatActivity() {
             }
             .build()
 
-        val retrofitBuilder = Retrofit.Builder()
+        // Setup Retrofit instance
+        val apiService = Retrofit.Builder()
             .baseUrl("https://spotify-downloader9.p.rapidapi.com/")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(APIInterface::class.java) // <-- This must match the interface
+            .create(APIInterface::class.java)
 
-        val retrofitData = retrofitBuilder.getTrackByName(query)
-        Log.d("QuerySent", query)
+        // Make API call
+        val call = apiService.getTrackByName(query)
 
+        // Enqueue the request
+        call.enqueue(object : Callback<ApiResponse> {
+            override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
+                Log.d("ResponseSuccess", response.isSuccessful.toString())
+                Log.d("ResponseCode", response.code().toString())
 
-        retrofitData.enqueue(object : Callback<Data> {
-            override fun onResponse(call: Call<Data>, response: Response<Data>) {
                 if (response.isSuccessful) {
-                    val tracks = response.body()?.tracks?.items
+                    val responseBody = response.body()
+                    Log.d("Print JSON", responseBody.toString())
 
-                    Log.d("Search", "Tracks found: $tracks")
-                    Log.d("Search", "Tracks size: ${tracks?.size}")
+                    if (responseBody?.sucess == true) {
+                        Log.d("JSON Received", "success")
+                    } else {
+                        Log.d("JSON Received", "data received")
+                    }
+
+                    val tracks = responseBody?.data?.tracks?.items
 
                     if (!tracks.isNullOrEmpty()) {
                         trackList.clear()
@@ -86,35 +106,31 @@ class SearchActivity : AppCompatActivity() {
                         adapter.notifyDataSetChanged()
                         Log.d("Search", "Updated track list with ${tracks.size} items")
                     } else {
-                        if (response.body()?.tracks != null) {
-                            Log.d("Search", "Tracks object exists but items is empty or null")
-                            Log.d("Search", "Tracks totalCount: ${response.body()?.tracks?.totalCount}")
+                        responseBody?.data?.tracks?.let {
+                            Log.d("Search", "Tracks object exists but items are empty")
+                            Log.d("Search", "Tracks totalCount: ${it.totalCount}")
                         }
-                        Toast.makeText(this@SearchActivity, "No results found", Toast.LENGTH_SHORT).show()
-                        Log.d("No results found","${response.code()}")
+                        Toast.makeText(this@SearchActivity, "No results found: ${response.code()}", Toast.LENGTH_SHORT).show()
+                        Log.e("Search", "No results found: ${response.code()}")
                     }
+
                 } else {
                     Toast.makeText(this@SearchActivity, "API Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                     Log.e("API Error", "Code: ${response.code()}, Message: ${response.message()}")
 
-                    // Log the error body
+                    // Print error body if available
                     response.errorBody()?.let { errorBody ->
                         Log.e("API Error", "Error body: ${errorBody.string()}")
                     }
                 }
-
-                Log.d("RawResponse", response.body().toString())
-                Log.d("ResponseSuccess", response.isSuccessful.toString())
-                Log.d("ResponseCode", response.code().toString())
-
             }
 
-            override fun onFailure(call: Call<Data>, t: Throwable) {
+            override fun onFailure(call: Call<ApiResponse>, t: Throwable) {
                 Toast.makeText(this@SearchActivity, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
                 Log.e("Search", "Failure: ${t.message}")
             }
         })
-
     }
+
 
 }

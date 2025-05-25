@@ -29,6 +29,7 @@ class TracksAdapter (private val trackList: List<ItemXXXXXXXXX>):RecyclerView.Ad
         val track = trackList[position]
         holder.trackName.text = track.name
         holder.trackId.text = track.id
+        Picasso.get().load(track.albumOfTrack.coverArt[0].url).into(holder.trackImage)
 
         /*Picasso.get().load(video.thumbnail).into(holder.trackImage)*/
     }
