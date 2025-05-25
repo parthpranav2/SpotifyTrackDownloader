@@ -1,5 +1,6 @@
 package com.example.freemusicapiintegratinspotifysearchanddownloader
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -34,7 +35,11 @@ class SearchActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.rvTracks.layoutManager = LinearLayoutManager(this)
-        adapter = TracksAdapter(trackList)
+
+        adapter = TracksAdapter(trackList){ sTrackURL ->
+            generateDownloadableTrack(sTrackURL)
+        }
+
         binding.rvTracks.adapter = adapter
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -83,8 +88,8 @@ class SearchActivity : AppCompatActivity() {
         val call = apiService.getTrackByName(query)
 
         // Enqueue the request
-        call.enqueue(object : Callback<ApiResponse> {
-            override fun onResponse(call: Call<ApiResponse>, response: Response<ApiResponse>) {
+        call.enqueue(object : Callback<SearchApiResponse> {
+            override fun onResponse(call: Call<SearchApiResponse>, response: Response<SearchApiResponse>) {
                 Log.d("ResponseSuccess", response.isSuccessful.toString())
                 Log.d("ResponseCode", response.code().toString())
 
@@ -125,11 +130,73 @@ class SearchActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onFailure(call: Call<ApiResponse>, t: Throwable) {
+            override fun onFailure(call: Call<SearchApiResponse>, t: Throwable) {
                 Toast.makeText(this@SearchActivity, "Error: ${t.message}", Toast.LENGTH_SHORT).show()
                 Log.e("Search", "Failure: ${t.message}")
             }
         })
+    }
+
+    private fun generateDownloadableTrack(sTrackURL : String){  //here s stands for spotify
+        // Setup logging interceptor for debugging
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        // Setup OkHttp client with headers and logging
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("x-rapidapi-key", apiKey)
+                    .addHeader("x-rapidapi-host", "spotify-downloader9.p.rapidapi.com")
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
+
+        // Setup Retrofit instance
+        val apiService = Retrofit.Builder()
+            .baseUrl("https://spotify-downloader9.p.rapidapi.com/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(APIInterface::class.java)
+
+        // Make API call
+        val call = apiService.getDownloadableFileURL(sTrackURL)
+
+        // Enqueue the request
+        call.enqueue(object : Callback<DownloadApiResponse> {
+            override fun onResponse(call: Call<DownloadApiResponse>, response: Response<DownloadApiResponse>) {
+                if (response.isSuccessful) {
+                    val downloadUrl = response.body()?.data?.downloadLink
+                    val title = response.body()?.data?.title
+                    val id = response.body()?.data?.id
+                    val coverPageURL = response.body()?.data?.cover
+
+                    if (!downloadUrl.isNullOrEmpty()) {
+                        // 🔽 You can now use this URL to download the MP3
+                        GlobalData.downloadURL=downloadUrl
+                        GlobalData.trackName=title
+                        GlobalData.trackID=id
+                        GlobalData.coverPageURL = coverPageURL
+                        Log.d("Download", "Download URL: $downloadUrl")
+
+                        val intent = Intent(this@SearchActivity, DownloadActivity::class.java)
+                        startActivity(intent)
+                        // Optionally store it in a variable or start a download
+                    }
+                } else {
+                    Log.e("Download", "API response unsuccessful")
+                }
+            }
+
+            override fun onFailure(call: Call<DownloadApiResponse>, t: Throwable) {
+                Log.e("Download", "API call failed", t)
+            }
+        })
+
     }
 
 

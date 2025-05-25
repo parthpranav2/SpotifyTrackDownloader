@@ -9,12 +9,16 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.imageview.ShapeableImageView
 import com.squareup.picasso.Picasso
 
-class TracksAdapter (private val trackList: List<ItemXXXXXXXXX>):RecyclerView.Adapter<TracksAdapter.TrackViewHolder>() {
+class TracksAdapter (private val trackList: List<ItemXXXXXXXXX>,
+                     private val onGetSourceClicked: (trackUrl: String) -> Unit
+):RecyclerView.Adapter<TracksAdapter.TrackViewHolder>() {
     class TrackViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val trackImage: ShapeableImageView = itemView.findViewById(R.id.imgThumbnail)
         val trackName: TextView = itemView.findViewById(R.id.txttrackName)
         val trackId: TextView = itemView.findViewById(R.id.txttrackId)
         val btnGetSource: View = itemView.findViewById(R.id.btnGetSource)
+        val txtDownloadStatus: TextView = itemView.findViewById(R.id.txtDownloadStatus)
+        val progressBar: View = itemView.findViewById(R.id.progressBar)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TrackViewHolder {
@@ -31,6 +35,27 @@ class TracksAdapter (private val trackList: List<ItemXXXXXXXXX>):RecyclerView.Ad
         holder.trackId.text = track.id
         Picasso.get().load(track.albumOfTrack.coverArt[0].url).into(holder.trackImage)
 
-        /*Picasso.get().load(video.thumbnail).into(holder.trackImage)*/
+
+        // Reset UI
+        holder.txtDownloadStatus.visibility = View.GONE
+        holder.progressBar.visibility = View.GONE
+        holder.btnGetSource.isEnabled = true
+
+        holder.btnGetSource.setOnClickListener {
+            holder.progressBar.visibility = View.VISIBLE
+            holder.txtDownloadStatus.visibility = View.VISIBLE
+            holder.txtDownloadStatus.text = "Obtaining Source..."
+            holder.btnGetSource.isEnabled = false
+
+            GlobalData.trackParamURL = "https://open.spotify.com/track/"+track.id
+
+            onGetSourceClicked("https://open.spotify.com/track/"+track.id)
+
+            // After download is done (you need a callback or LiveData/Flow),
+            // update UI like:
+            // holder.progressBar.visibility = View.GONE
+            // holder.txtDownloadStatus.text = "Download Complete"
+            // holder.btnDownload.text = "Downloaded"
+        }
     }
 }

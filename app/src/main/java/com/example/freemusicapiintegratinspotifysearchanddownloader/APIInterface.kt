@@ -13,5 +13,11 @@ interface APIInterface {
         /*@Query("limit") limit: Int = 10,
         @Query("offset") offset: Int = 0,
         @Query("noOfTopResults") noOfTopResults: Int = 5*/
-    ) :Call<ApiResponse>
+    ) :Call<SearchApiResponse>
+
+    @GET("downloadSong")
+    fun getDownloadableFileURL(
+        @Query("songId") query: String,
+    ) :Call<DownloadApiResponse>
+
 }

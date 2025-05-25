@@ -46,6 +46,16 @@
                 android:layout_marginTop="5dp"
                 android:ellipsize="end" />
 
+            <TextView
+                android:id="@+id/txtDownloadStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Idle"
+                android:textSize="14sp"
+                android:textColor="@android:color/holo_green_dark"
+                android:visibility="gone"
+                android:paddingTop="4dp" />
+
         </LinearLayout>
 
         <Button

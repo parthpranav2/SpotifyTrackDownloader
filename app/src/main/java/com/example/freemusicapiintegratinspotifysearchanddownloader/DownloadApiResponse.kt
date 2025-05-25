@@ -1,7 +1,7 @@
 package com.example.freemusicapiintegratinspotifysearchanddownloader
 
 
-data class ApiResponse(
+data class DownloadApiResponse(
     val sucess : Boolean,
-    val data : Data
+    val data : DataX
 )
