@@ -100,7 +100,7 @@ class SearchActivity : AppCompatActivity() {
                     if (responseBody?.sucess == true) {
                         Log.d("JSON Received", "success")
                     } else {
-                        Log.d("JSON Received", "data received")
+                        Log.d("JSON Received", "{${response.body()}")
                     }
 
                     val tracks = responseBody?.data?.tracks?.items
@@ -112,8 +112,8 @@ class SearchActivity : AppCompatActivity() {
                         Log.d("Search", "Updated track list with ${tracks.size} items")
                     } else {
                         responseBody?.data?.tracks?.let {
-                            Log.d("Search", "Tracks object exists but items are empty")
-                            Log.d("Search", "Tracks totalCount: ${it.totalCount}")
+                            Log.e("Search", "Tracks object exists but items are empty")
+                            Log.e("Search", "Tracks totalCount: ${it.totalCount}")
                         }
                         Toast.makeText(this@SearchActivity, "No results found: ${response.code()}", Toast.LENGTH_SHORT).show()
                         Log.e("Search", "No results found: ${response.code()}")
