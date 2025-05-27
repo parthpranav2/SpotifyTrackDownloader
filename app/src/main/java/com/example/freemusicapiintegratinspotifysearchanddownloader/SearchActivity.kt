@@ -10,6 +10,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.freemusicapiintegratinspotifysearchanddownloader.databinding.ActivitySearchBinding
+import com.google.firebase.Firebase
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import okhttp3.OkHttpClient
 import retrofit2.Call
 import retrofit2.Callback
@@ -17,19 +22,36 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.logging.HttpLoggingInterceptor
+import kotlin.collections.getValue
+
 
 class SearchActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySearchBinding
     private lateinit var adapter: TracksAdapter
     private val trackList = mutableListOf<ItemXXXXXXXXX>()
 
-    val apiKey = "fefbbccd25mshc792dfdfb4af473p107bb4jsn6df436454e46"
+    private lateinit var apiKey : String
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_search)
+
+        val dbRef = FirebaseDatabase.getInstance().getReference("freemusicapiintegratinspotifysearchanddownloader").child("apikey")
+
+        dbRef.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                apiKey = snapshot.getValue(String::class.java) ?: ""
+            }
+            override fun onCancelled(error: DatabaseError) {
+                Toast.makeText(
+                    this@SearchActivity,
+                    "Unable to fetch api key error: ${error.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        })
 
         binding = ActivitySearchBinding.inflate(layoutInflater)
         setContentView(binding.root)
